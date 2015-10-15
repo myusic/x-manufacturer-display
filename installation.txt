@@ -1,0 +1,51 @@
+Installation files:
+
+1. Generate a backup of your x-cart home directory. 
+
+2. In your database add a column to the xcart_manufacturers database with the same name as the header: gender.
+
+3. skin/common_files/modules/Manufacturers/manufacturers.tpl
+	a. add in your table header and select options to the table that manages the administrative display. This sets up the available select options for your custom setting.
+		a1. Approx line 71:   
+			<td width="30" align="center">Gender</td>
+		a2. Approx line 85: 
+			<td align="center">
+			  <select name="records[{$v.manufacturerid}][gender]">
+			  <option value="Both" {if $v.gender eq 'Both'}selected{/if}>Both</option>
+			  <option value="Men" {if $v.gender eq 'Men'}selected{/if} >Men</option>
+			  <option value="Women" {if $v.gender eq 'Women'}selected{/if}>Women</option>
+			  </select>
+			</td>
+
+4. modules/Manufacturers/manufacturers.php
+	a. Approx line 476 add to the array: 
+		'gender'       => $v['gender'],
+	This should be in the foreach ($records as $k => $v) loop and will enable you to save your new setting in the database.
+	
+	
+5. modules/Manufacturers/customer_manufacturers_list.php
+	a. Add these lines in approximately 149 replacing the existing smarty variable setting for $manufacturers
+	    $manufacturers_m = func_query("SELECT $sql_tbl[manufacturers].*, IFNULL($sql_tbl[manufacturers_lng].manufacturer, $sql_tbl[manufacturers].manufacturer) as manufacturer, IFNULL($sql_tbl[manufacturers_lng].descr, $sql_tbl[manufacturers].descr) as descr FROM $sql_tbl[manufacturers] LEFT JOIN $sql_tbl[manufacturers_lng] ON $sql_tbl[manufacturers].manufacturerid = $sql_tbl[manufacturers_lng].manufacturerid AND $sql_tbl[manufacturers_lng].code = '$shop_language' WHERE avail = 'Y' AND ($sql_tbl[manufacturers].gender = 'Men' OR $sql_tbl[manufacturers].gender = 'Both')ORDER BY $sql_tbl[manufacturers].manufacturer, manufacturer".($objects_per_page > 0 ? " LIMIT $first_page, $objects_per_page" : ""));
+
+        $manufacturers_w = func_query("SELECT $sql_tbl[manufacturers].*, IFNULL($sql_tbl[manufacturers_lng].manufacturer, $sql_tbl[manufacturers].manufacturer) as manufacturer, IFNULL($sql_tbl[manufacturers_lng].descr, $sql_tbl[manufacturers].descr) as descr FROM $sql_tbl[manufacturers] LEFT JOIN $sql_tbl[manufacturers_lng] ON $sql_tbl[manufacturers].manufacturerid = $sql_tbl[manufacturers_lng].manufacturerid AND $sql_tbl[manufacturers_lng].code = '$shop_language' WHERE avail = 'Y' AND ($sql_tbl[manufacturers].gender = 'Women' OR $sql_tbl[manufacturers].gender = 'Both')ORDER BY $sql_tbl[manufacturers].manufacturer, manufacturer".($objects_per_page > 0 ? " LIMIT $first_page, $objects_per_page" : ""));
+
+        if ($_GET['display'] == 'Men') {
+            $smarty->assign('manufacturers', $manufacturers_m);
+            $smarty->assign('manufacturers_display', 'Men');
+        } elseif ($_GET['display'] == 'Women') {
+            $smarty->assign('manufacturers', $manufacturers_w);
+            $smarty->assign('manufacturers_display', 'Women');
+        } else {
+            $smarty->assign('manufacturers', $manufacturers);
+            $smarty->assign('manufacturers_display', 'All');
+        }
+
+	b. urls should have have parameters set to manufacturer.php?display=SETDISPLAYSTRING
+		b1. SETDISPLAYSTRING should be the parameter you will use to call the different displays. In this case there is Men, Women, and All(default).
+			example: http://www.website.com/manufacturer.php?display=Men
+			
+		
+5. Modification (optional)
+	a. To modify the type of selection box change all instances of Gender, Men, and Women. You can add in as many different select options as you need.
+	b. To modify the lists additionally, do not change the tpl files. $manufacturers array is best modified in the php.
+
